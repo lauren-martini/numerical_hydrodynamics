@@ -39,6 +39,7 @@ function run_sim(inputs, riemannsolver, artificial_viscosity; printout=false)
     N = inputs["N"]
     ghosts = inputs["ghosts"]
     end_time = inputs["end_time"]
+    C = inputs["C"]
     γ = inputs["γ"]
 
     if artificial_viscosity
@@ -64,20 +65,8 @@ function run_sim(inputs, riemannsolver, artificial_viscosity; printout=false)
     energy = zeros(Float64, total_cells, 1)
     pressure = zeros(Float64, total_cells, 1)
 
-    u = Q[2, :]./Q[1, :]
-    ϵₜ = Q[3, :]./Q[1, :]
-    ϵₖ = 0.5*(u.^2)
-    ϵ = ϵₜ - ϵₖ
-
     timestep = 1
     while t < end_time
-
-        # calculate time_step
-        cₛ = sqrt.(γ*(γ - 1)*ϵ)
-
-        dt = C*minimum(dx./(cₛ[istart:iend] .+ abs.(Q[2,istart:iend]./Q[1,istart:iend])))
-
-        # ~~~ ADVECTION ~~~ #
 
         # Update Pressure
         ρ = Q[1, :]     # Density
@@ -92,49 +81,38 @@ function run_sim(inputs, riemannsolver, artificial_viscosity; printout=false)
             p += Π
         end
 
-        # calculate fluxes
-        #fluxes = flux_step(Q, istart, iend)
-        sol = collect(solver.solve.(ρ[istart-1:iend-1],
-                                     u[istart-1:iend-1],
-                                     p[istart-1:iend-1],
-                                     ρ[istart:iend],
-                                     u[istart:iend],
-                                     p[istart:iend]))
-        out = convert.(Array{Float64}, sol) # Convert to julia array
-        println(typeof(sol))
-        println(typeof(out))
-        ρ_sol = get.(sol, 0)
-        u_sol = get.(sol, 1)
-        p_sol = get.(sol, 2)
+        # calculate time_step
+        #cₛ = sqrt.(γ*(γ - 1)*ϵ)
+        cₛ = sqrt.(γ*p./ρ)
 
-        fluxes = [ρ_sol, u_sol, p_sol]
-                # Apply advection
-        #Q[1, istart:iend] -= (dt/dx)*(fluxes[1, istart+1:iend+1] - fluxes[1, istart:iend])
-        Q[:, istart:iend] -= (dt/dx)*(fluxes[:, istart+1:iend+1] - fluxes[:, istart:iend])
+        dt = C*minimum(dx./(cₛ[istart:iend] .+ abs.(u[istart:iend])))
+        #dt = (C*dx)./maximum(cₛ[istart:iend] .+ abs.(u[istart:iend]))
+
+        # ~~~ ADVECTION ~~~ #
+
+        # calculate fluxes
+        fluxes = zero(Q)
+        for i in range(istart, iend, step=1)
+            ρ_sol, u_sol, p_sol, _tmp = solver.solve.(ρ[i-1], u[i-1],
+                                                      p[i-1], ρ[i],
+                                                      u[i], p[i])
+            fluxes[1, i] = ρ_sol*u_sol
+            fluxes[2, i] = (ρ_sol*u_sol).^2 + p_sol
+            fluxes[3, i] = (p_sol*γ ./ (γ - 1) .+ 0.5*ρ_sol*u_sol.^2)*u_sol
+        end
 
         # ~~~ SOURCE TERMS ~~~ #
-
-        # Update Pressure
-        # ρ = Q[1, :]     # Density
-        # u = Q[2, :]./ρ  # Velocity
-        # ϵₜ = Q[3, :]./ρ  # Total energy
-        # ϵₖ = 0.5*(u.^2)  # Kinetic energy
-        # ϵ = ϵₜ - ϵₖ       # Internal energy
-        #
-        # p = (γ - 1)*ρ.*ϵ # Pressure = (γ - 1)ρϵ
-        #
-        # if artificial_viscosity
-        #     Π = calc_av(Q, u, ζ, istart, iend)
-        #     p += Π
-        # end
-        # Q[2, istart:iend] -= (dt/(2*dx))*(p[istart+1:iend+1] - p[istart-1:iend-1])
-        # Q[3, istart:iend] -= (dt/(2*dx))*(p[istart+1:iend+1].*u[istart+1:iend+1] - p[istart-1:iend-1].*u[istart-1:iend-1])
 
         # Boundary conditions
         Q[1, 1] = Q[1, 2] # rho_0 = rho_1
         Q[2, 1] = -Q[2, 2]
+        Q[3, 1] = Q[3, 2]
         Q[1, end] = Q[1, end-1] # rho_N+1 = rho_N
         Q[2, end] = -Q[2, end-1]
+        Q[3, end] = Q[3, end-1]
+
+        # Apply advection
+        Q[:, istart:iend] -= (dt/dx)*(fluxes[:, istart+1:iend+1] - fluxes[:, istart:iend])
 
         # Save data
         if timestep % 10 == 0
@@ -149,6 +127,7 @@ function run_sim(inputs, riemannsolver, artificial_viscosity; printout=false)
 
         if printout
             print("\r t = $t    dt = $(dt)")
+            #println("t = $t      dt = $(dt)")
         end
     end
 

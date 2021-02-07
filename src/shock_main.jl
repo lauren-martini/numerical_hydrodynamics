@@ -10,34 +10,39 @@ catch
 end
 scriptdir = @__DIR__
 pushfirst!(PyVector(pyimport("sys")."path"), scriptdir)
-riemannsolver = pyimport("riemannsolver") # Credit to Vandenbroucke
 
 include("shock.jl")
 include("utils.jl")
 
-# ~~~~~~~~~~~ Simulation settings ~~~~~~~~~~~ #
-benchmark = false
-artificial_viscosity = false
+function setup()
+    # ~~~~~~~~~~~ Simulation settings ~~~~~~~~~~~ #
+    benchmark = false
+    artificial_viscosity = false
+    riemannsolver = pyimport("riemannsolver") # Credit to Vandenbroucke
 
-# ~~~~~~~~~~~ Simulation inputs ~~~~~~~~~~~ #
-domain = [-50, 50]
-N = 500 # num grid points/cells
-ghosts = 2 # num ghost cells
-end_time = 0.2
+    # ~~~~~~~~~~~ Simulation inputs ~~~~~~~~~~~ #
+    domain = [-.5, .5]
+    N = 500 # num grid points/cells
+    ghosts = 2 # num ghost cells
+    end_time = 0.2
 
-# Courant number - see CFL condition (u*dt/dx <= C)
-C = 0.5
-# Adiabatic exponent - constant
-γ = 1.4
+    # Courant number - see CFL condition (u*dt/dx <= C)
+    C = 0.3
+    # Adiabatic exponent - constant
+    γ = 1.4
 
-inputs = Dict("domain"=>domain,
-              "N"=>N,
-              "ghosts"=>ghosts,
-              "end_time"=>end_time,
-              "C"=>C,
-              "γ"=>γ)
+    inputs = Dict("domain"=>domain,
+                  "N"=>N,
+                  "ghosts"=>ghosts,
+                  "end_time"=>end_time,
+                  "C"=>C,
+                  "γ"=>γ)
+    return benchmark, artificial_viscosity, riemannsolver, inputs
+end
 
 # ~~~~~~~~~~~~~~~~~ Run  ~~~~~~~~~~~~~~~~~ #
+benchmark, artificial_viscosity, riemannsolver, inputs = setup()
+
 if benchmark
     # _grid, shock_results, shock_init = @btime run_sim(inputs,
     #                                                     artificial_viscosity)
