@@ -46,28 +46,25 @@ function HLL_solver(γ)
         # Compute flux
         if sₗ <= 0 <= sᵣ
             Fₗ = [ρₗ*uₗ,
-                 (pₗ*uₗ)^2 + pₗ,
+                 (ρₗ*uₗ)^2 + pₗ,
                  (pₗ*γ / (γ - 1) + 0.5*ρₗ*uₗ^2)*uₗ]
             Fᵣ = [ρᵣ*uᵣ,
-                  (pᵣ*uᵣ)^2 + pᵣ,
+                  (ρᵣ*uᵣ)^2 + pᵣ,
                   (pᵣ*γ / (γ - 1) + 0.5*ρᵣ*uᵣ^2)*uᵣ]
             F_hll = (sᵣ*Fₗ - sₗ*Fᵣ .+ sₗ*sᵣ*(uᵣ - uₗ))/(sᵣ - sₗ)
-            ρ_sol = F_hll[1]
-            u_sol = F_hll[2]
-            p_sol = F_hll[3]
         elseif 0 <= sₗ # Fl
-            ρ_sol = ρₗ*uₗ
-            u_sol = (pₗ*uₗ)^2 + pₗ
-            p_sol = (pₗ*γ / (γ - 1) + 0.5*ρₗ*uₗ^2)*uₗ
+            F_hll = [ρₗ*uₗ,
+                    (ρₗ*uₗ)^2 + pₗ,
+                    (pₗ*γ / (γ - 1) + 0.5*ρₗ*uₗ^2)*uₗ]
         elseif 0 >= sᵣ # Fr
-            ρ_sol = ρᵣ*uᵣ
-            u_sol = (pᵣ*uᵣ)^2 + pᵣ
-            p_sol = (pᵣ*γ / (γ - 1) + 0.5*ρᵣ*uᵣ^2)*uᵣ
+            F_hll = [ρᵣ*uᵣ,
+                    (ρᵣ*uᵣ)^2 + pᵣ,
+                    (pᵣ*γ / (γ - 1) + 0.5*ρᵣ*uᵣ^2)*uᵣ]
         else
             print("Something went wrong. Check HLL solver.")
         end
 
-        return [ρ_sol, u_sol, p_sol]
+        return F_hll
     end
 end
 
@@ -79,3 +76,28 @@ function gen_grid(x, domain, ghosts, dx, total_cells)
     end
     return grid
 end
+
+
+# Compute flux
+# if sₗ <= 0 <= sᵣ
+#     Fₗ = [ρₗ*uₗ,
+#          (pₗ*uₗ)^2 + pₗ,
+#          (pₗ*γ / (γ - 1) + 0.5*ρₗ*uₗ^2)*uₗ]
+#     Fᵣ = [ρᵣ*uᵣ,
+#           (pᵣ*uᵣ)^2 + pᵣ,
+#           (pᵣ*γ / (γ - 1) + 0.5*ρᵣ*uᵣ^2)*uᵣ]
+#     F_hll = (sᵣ*Fₗ - sₗ*Fᵣ .+ sₗ*sᵣ*(uᵣ - uₗ))/(sᵣ - sₗ)
+#     ρ_sol = F_hll[1]
+#     u_sol = F_hll[2]
+#     p_sol = F_hll[3]
+# elseif 0 <= sₗ # Fl
+#     ρ_sol = ρₗ*uₗ
+#     u_sol = (pₗ*uₗ)^2 + pₗ
+#     p_sol = (pₗ*γ / (γ - 1) + 0.5*ρₗ*uₗ^2)*uₗ
+# elseif 0 >= sᵣ # Fr
+#     ρ_sol = ρᵣ*uᵣ
+#     u_sol = (pᵣ*uᵣ)^2 + pᵣ
+#     p_sol = (pᵣ*γ / (γ - 1) + 0.5*ρᵣ*uᵣ^2)*uᵣ
+# else
+#     print("Something went wrong. Check HLL solver.")
+# end

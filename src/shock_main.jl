@@ -18,8 +18,8 @@ function setup()
     # ~~~~~~~~~~~ Simulation settings ~~~~~~~~~~~ #
     benchmark = false
     artificial_viscosity = false
-    #solver_type = "approx" # Options: exact/approx
-    solver_type = "exact"
+    solver_type = "approx" # Options: exact/approx
+    #solver_type = "exact"
 
     # ~~~~~~~~~~~ Simulation inputs ~~~~~~~~~~~ #
     domain = [-.5, .5]

@@ -79,6 +79,9 @@ function run_sim(inputs, solver, artificial_viscosity; printout=false)
         end
 
         # calculate time_step
+        if any(x->x<0, ρ) || any(x->x<0, p)
+            println("warning, negative sound speed")
+        end
         cₛ = calc_soundspeed(γ, p, ρ)
         dt = C*minimum(dx./(cₛ[istart:iend] .+ abs.(u[istart:iend])))
 
@@ -129,7 +132,7 @@ end
 function to_shock_animation(grid, res, init; frame_interval=10)
 
     num_res = size(res[1])[2]
-    println()
+    println("Prepping plot for animation.\n")
     anim = @animate for i in 1:num_res
         #plot(grid, res[:, i], ylims=(0.95, 2.1), color="grey", label="Density", legend=:topright)
         #plot!(size=(900, 400))
