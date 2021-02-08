@@ -18,14 +18,18 @@ function calc_soundspeed(γ, p, ρ)
     return  sqrt.(γ*p./ρ)
 end
 
+function Riemann_solver(solver)
+    #todo
+end
+
 function HLL_solver(γ)
     """ Factory for hll_solvers so that their
     input matches that in Reimannsolver.py"""
 
     function hll_solver(ρₗ, uₗ, pₗ, ρᵣ, uᵣ, pᵣ)
         # Compute sound speeds at interfaces
-        cₛₗ = calc_soundspeed(ρₗ, uₗ, pₗ)
-        cₛᵣ = calc_soundspeed(ρᵣ, uᵣ, pᵣ)
+        cₛₗ = calc_soundspeed(γ, pₗ, ρₗ)
+        cₛᵣ = calc_soundspeed(γ, pᵣ, ρᵣ)
 
         # Compute signal speeds
         sₗ = min(uₗ - cₛₗ, uᵣ - cₛᵣ)
