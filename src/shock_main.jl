@@ -18,7 +18,7 @@ function setup()
     # ~~~~~~~~~~~ Simulation settings ~~~~~~~~~~~ #
     benchmark = false
     artificial_viscosity = false
-    riemannsolver = pyimport("riemannsolver") # Credit to Vandenbroucke
+    solver_type = "exact" # Options: exact/approx
 
     # ~~~~~~~~~~~ Simulation inputs ~~~~~~~~~~~ #
     domain = [-.5, .5]
@@ -37,18 +37,26 @@ function setup()
                   "end_time"=>end_time,
                   "C"=>C,
                   "γ"=>γ)
-    return benchmark, artificial_viscosity, riemannsolver, inputs
+
+    if solver_type == "exact"
+        riemannsolver = pyimport("riemannsolver") # Credit to Vandenbroucke
+        solver = riemannsolver.RiemannSolver(γ).solve
+    elseif solver_type == "approx"
+        solver = hll_solver
+    end
+
+    return benchmark, artificial_viscosity, solver, inputs
 end
 
 # ~~~~~~~~~~~~~~~~~ Run  ~~~~~~~~~~~~~~~~~ #
-benchmark, artificial_viscosity, riemannsolver, inputs = setup()
+benchmark, artificial_viscosity, solver, inputs = setup()
 
 if benchmark
     # _grid, shock_results, shock_init = @btime run_sim(inputs,
     #                                                     artificial_viscosity)
 else
     _grid, shock_results, shock_init = run_sim(inputs,
-                                                riemannsolver,
+                                                solver,
                                                 artificial_viscosity,
                                                 printout=true)
 end

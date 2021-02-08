@@ -33,7 +33,7 @@ function calc_av(Q, u, ζ, istart, iend)
 end
 
 
-function run_sim(inputs, riemannsolver, artificial_viscosity; printout=false)
+function run_sim(inputs, solver, artificial_viscosity; printout=false)
     # Unpack simulation inputs
     domain = inputs["domain"]
     N = inputs["N"]
@@ -45,9 +45,6 @@ function run_sim(inputs, riemannsolver, artificial_viscosity; printout=false)
     if artificial_viscosity
         ζ = 3.0
     end
-
-    # Riemann solver
-    solver = riemannsolver.RiemannSolver(γ)
 
     total_cells = N + ghosts
     x = collect(range(domain[1], domain[2], length=total_cells))
@@ -82,26 +79,24 @@ function run_sim(inputs, riemannsolver, artificial_viscosity; printout=false)
         end
 
         # calculate time_step
-        #cₛ = sqrt.(γ*(γ - 1)*ϵ)
-        cₛ = sqrt.(γ*p./ρ)
-
+        cₛ = calc_soundspeed(γ, p, ρ)
         dt = C*minimum(dx./(cₛ[istart:iend] .+ abs.(u[istart:iend])))
-        #dt = (C*dx)./maximum(cₛ[istart:iend] .+ abs.(u[istart:iend]))
 
         # ~~~ ADVECTION ~~~ #
 
         # calculate fluxes
         fluxes = zero(Q)
-        for i in range(istart, iend, step=1)
-            ρ_sol, u_sol, p_sol, _tmp = solver.solve.(ρ[i-1], u[i-1],
-                                                      p[i-1], ρ[i],
-                                                      u[i], p[i])
+        for i in range(istart, iend+1, step=1)
+            ρ_sol, u_sol, p_sol, _tmp = solver(ρ[i-1], u[i-1],
+                                               p[i-1], ρ[i],
+                                               u[i], p[i])
             fluxes[1, i] = ρ_sol*u_sol
             fluxes[2, i] = (ρ_sol*u_sol).^2 + p_sol
             fluxes[3, i] = (p_sol*γ ./ (γ - 1) .+ 0.5*ρ_sol*u_sol.^2)*u_sol
         end
 
-        # ~~~ SOURCE TERMS ~~~ #
+        # Apply advection
+        Q[:, istart:iend] -= (dt/dx)*(fluxes[:, istart+1:iend+1] - fluxes[:, istart:iend])
 
         # Boundary conditions
         Q[1, 1] = Q[1, 2] # rho_0 = rho_1
@@ -110,9 +105,6 @@ function run_sim(inputs, riemannsolver, artificial_viscosity; printout=false)
         Q[1, end] = Q[1, end-1] # rho_N+1 = rho_N
         Q[2, end] = -Q[2, end-1]
         Q[3, end] = Q[3, end-1]
-
-        # Apply advection
-        Q[:, istart:iend] -= (dt/dx)*(fluxes[:, istart+1:iend+1] - fluxes[:, istart:iend])
 
         # Save data
         if timestep % 10 == 0
