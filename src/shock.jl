@@ -85,14 +85,13 @@ function run_sim(inputs, solver, artificial_viscosity; printout=false)
         # ~~~ ADVECTION ~~~ #
 
         # calculate fluxes
+        #fluxes = solver.(ρ[istart-1:iend], u[istart-1:iend], p[istart-1:iend],
+        #                 ρ[istart:iend+1], u[istart:iend+1], p[istart:iend+1])
         fluxes = zero(Q)
         for i in range(istart, iend+1, step=1)
-            ρ_sol, u_sol, p_sol, _tmp = solver(ρ[i-1], u[i-1],
-                                               p[i-1], ρ[i],
-                                               u[i], p[i])
-            fluxes[1, i] = ρ_sol*u_sol
-            fluxes[2, i] = (ρ_sol*u_sol).^2 + p_sol
-            fluxes[3, i] = (p_sol*γ ./ (γ - 1) .+ 0.5*ρ_sol*u_sol.^2)*u_sol
+            fluxes[1, i], fluxes[2, i], fluxes[3, i] = solver(ρ[i-1], u[i-1],
+                                                              p[i-1], ρ[i],
+                                                              u[i], p[i])
         end
 
         # Apply advection

@@ -1,25 +1,33 @@
-# function flux_step(Q, istart, iend)
-#     flux = zero(Q)
-#     for i in range(istart, iend, step=1)
-#         # Velocity across the boundary
-#         u_boundary = 0.5((Q[2, i]/Q[1, i]) + (Q[2, i-1]/Q[1, i-1]))
-#         # u_boundary = calc_u_boundary(Q, i)
-#
-#         if u_boundary >= 0
-#             flux[:, i] = Q[:, i-1] * u_boundary
-#         else
-#             flux[:, i] = Q[:, i] * u_boundary
-#         end
+# function calc_fluxes(solver, ρ, u, p, γ)
+#     fluxes = zero(Q)
+#     for i in range(istart, iend+1, step=1)
+#         ρ_sol, u_sol, p_sol = solver(ρ[i-1], u[i-1],
+#                                            p[i-1], ρ[i],
+#                                            u[i], p[i])
+#         fluxes[1, i] = ρ_sol*u_sol
+#         fluxes[2, i] = (ρ_sol*u_sol).^2 + p_sol
+#         fluxes[3, i] = (p_sol*γ ./ (γ - 1) .+ 0.5*ρ_sol*u_sol.^2)*u_sol
 #     end
-#     return flux
+#     return fluxes
 # end
 
 function calc_soundspeed(γ, p, ρ)
     return  sqrt.(γ*p./ρ)
 end
 
-function Riemann_solver(solver)
-    #todo
+function Riemann_solver(γ, riemannsolver)
+    """ Factory for the riemann solver so that
+    its output matches that of the HLL_solver. """
+    solver = riemannsolver.RiemannSolver(γ).solve
+    function riemann_solver(ρₗ, uₗ, pₗ, ρᵣ, uᵣ, pᵣ)
+        ρ_sol, u_sol, p_sol, _tmp = solver(ρₗ, uₗ, pₗ,
+                                           ρᵣ, uᵣ, pᵣ)
+        flux = [0.0, 0.0, 0.0]
+        flux[1] = ρ_sol*u_sol
+        flux[2] = (ρ_sol*u_sol)^2 + p_sol
+        flux[3] = (p_sol*γ ./ (γ - 1) .+ 0.5*ρ_sol*u_sol.^2)*u_sol
+        return flux
+    end
 end
 
 function HLL_solver(γ)
@@ -59,7 +67,7 @@ function HLL_solver(γ)
             print("Something went wrong. Check HLL solver.")
         end
 
-        return ρ_sol, u_sol, p_sol, nothing
+        return [ρ_sol, u_sol, p_sol]
     end
 end
 
