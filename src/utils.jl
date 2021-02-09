@@ -1,16 +1,3 @@
-# function calc_fluxes(solver, ρ, u, p, γ)
-#     fluxes = zero(Q)
-#     for i in range(istart, iend+1, step=1)
-#         ρ_sol, u_sol, p_sol = solver(ρ[i-1], u[i-1],
-#                                            p[i-1], ρ[i],
-#                                            u[i], p[i])
-#         fluxes[1, i] = ρ_sol*u_sol
-#         fluxes[2, i] = (ρ_sol*u_sol).^2 + p_sol
-#         fluxes[3, i] = (p_sol*γ ./ (γ - 1) .+ 0.5*ρ_sol*u_sol.^2)*u_sol
-#     end
-#     return fluxes
-# end
-
 function calc_soundspeed(γ, p, ρ)
     return  sqrt.(γ*p./ρ)
 end
@@ -79,28 +66,3 @@ function gen_grid(x, domain, ghosts, dx, total_cells)
     end
     return grid
 end
-
-
-# Compute flux
-# if sₗ <= 0 <= sᵣ
-#     Fₗ = [ρₗ*uₗ,
-#          (pₗ*uₗ)^2 + pₗ,
-#          (pₗ*γ / (γ - 1) + 0.5*ρₗ*uₗ^2)*uₗ]
-#     Fᵣ = [ρᵣ*uᵣ,
-#           (pᵣ*uᵣ)^2 + pᵣ,
-#           (pᵣ*γ / (γ - 1) + 0.5*ρᵣ*uᵣ^2)*uᵣ]
-#     F_hll = (sᵣ*Fₗ - sₗ*Fᵣ .+ sₗ*sᵣ*(uᵣ - uₗ))/(sᵣ - sₗ)
-#     ρ_sol = F_hll[1]
-#     u_sol = F_hll[2]
-#     p_sol = F_hll[3]
-# elseif 0 <= sₗ # Fl
-#     ρ_sol = ρₗ*uₗ
-#     u_sol = (pₗ*uₗ)^2 + pₗ
-#     p_sol = (pₗ*γ / (γ - 1) + 0.5*ρₗ*uₗ^2)*uₗ
-# elseif 0 >= sᵣ # Fr
-#     ρ_sol = ρᵣ*uᵣ
-#     u_sol = (pᵣ*uᵣ)^2 + pᵣ
-#     p_sol = (pᵣ*γ / (γ - 1) + 0.5*ρᵣ*uᵣ^2)*uᵣ
-# else
-#     print("Something went wrong. Check HLL solver.")
-# end
