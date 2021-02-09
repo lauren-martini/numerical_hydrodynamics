@@ -1,6 +1,10 @@
 using BenchmarkTools;
 using Plots;
 
+""" HW7: Riemann solvers
+    For part a, use solver_type = "exact"
+    For part b, use solver_type = "approx" """
+
 try
     using PyCall;
 catch
